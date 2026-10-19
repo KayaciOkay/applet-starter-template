@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { sdk } from './sdk';
+import { sdk } from './sdk.ts';
 import styles from './App.module.css';
 
 // Fields to request for each client. `as const` keeps the literal `1`s so the
@@ -11,9 +11,12 @@ const CLIENT_GRAPH = {
     avatarColor: 1,
 } as const;
 
-type Client = Awaited<
-    ReturnType<typeof sdk.getClients<typeof CLIENT_GRAPH>>
->['data'][number];
+type Client = {
+    id: string;
+    fullName: string;
+    city?: string | null;
+    avatarColor?: string | null;
+};
 
 export function App() {
     const [clients, setClients] = useState<Client[]>([]);
@@ -25,10 +28,14 @@ export function App() {
     useEffect(() => {
         let cancelled = false;
 
-        sdk.getClients({
-            ...CLIENT_GRAPH,
-            $limit: 100,
-        })
+    sdk.getClients(CLIENT_GRAPH)
+    .then((result) => {
+        if (cancelled) return;
+
+        setClients(result.data as unknown as Client[]);
+        setStatus('ready');
+    })
+
             .then((result) => {
                 if (cancelled) return;
                 setClients(result.data);
